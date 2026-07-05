@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="充电物流地图 - 浙江省与上海市区域，支持重型货车路径规划、ETC费用计算与充电费用估算">
+    <title>充电物流地图 | 浙江·上海</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+    <!-- 头部 -->
+    <header id="header">
+        <div class="header-left">
+            <button class="header-btn" id="btn-toggle-sidebar" title="菜单">☰</button>
+            <div class="header-logo">🚛</div>
+            <div class="header-title">
+                充电物流地图
+                <small>浙江省 & 上海市 | 电动重卡导航与费用计算</small>
+            </div>
+        </div>
+        <div class="header-right">
+            <a href="admin.html" class="header-btn" title="后台管理" style="text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:16px;">⚙️</a>
+            <button class="header-btn" id="btn-locate" title="回到区域">🎯</button>
+        </div>
+    </header>
+
+    <!-- 主体 -->
+    <div id="main">
+        <!-- 侧边栏遮罩 -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- 侧边栏 -->
+        <aside id="sidebar">
+            <!-- 图层控制 -->
+            <div class="panel-section">
+                <h3><span class="icon">🗂️</span> 图层控制</h3>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="layer-hq" checked>
+                    <label for="layer-hq"><span class="layer-dot" style="background:#E91E63"></span> 物流公司大本营</label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="layer-factories" checked>
+                    <label for="layer-factories"><span class="layer-dot" style="background:var(--primary)"></span> 生产基地</label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="layer-car-charging" checked>
+                    <label for="layer-car-charging"><span class="layer-dot" style="background:#FF9800"></span> 小型充电站</label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="layer-charging" checked>
+                    <label for="layer-charging"><span class="layer-dot" style="background:var(--secondary)"></span> 重卡充电站</label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="layer-tolls">
+                    <label for="layer-tolls"><span class="layer-dot" style="background:#607D8B"></span> 高速收费站口</label>
+                </div>
+            </div>
+
+            <!-- 标注点 -->
+            <div class="panel-section">
+                <h3><span class="icon">📍</span> 标注点列表</h3>
+                <!-- 搜索与筛选 -->
+                <div class="search-bar">
+                    <input type="text" id="station-search" class="search-input" placeholder="搜索站名/地址/高速/运营商..." >
+                    <button class="search-clear" id="search-clear" title="清除">✕</button>
+                </div>
+                <div class="filter-tags" id="filter-tags">
+                    <button class="filter-tag active" data-filter="all">全部</button>
+                    <button class="filter-tag" data-filter="hq">🏠 大本营</button>
+                    <button class="filter-tag" data-filter="factory">🏭 工厂</button>
+                    <button class="filter-tag" data-filter="carCharging">🚗 小型充电站</button>
+                    <button class="filter-tag" data-filter="truckCharging">⚡ 重卡充电站</button>
+                    <button class="filter-tag" data-filter="swap">🔋 充换一体</button>
+                    <button class="filter-tag" data-filter="highway">🛣️ 高速站</button>
+                    <button class="filter-tag" data-filter="high-power">⚡ 大功率(≥400kW)</button>
+                    <button class="filter-tag" data-filter="toll">🚧 收费站</button>
+                </div>
+                <div id="point-list"></div>
+                <div id="search-result-count" class="search-result-count" style="display:none;"></div>
+            </div>
+
+            <!-- 路径规划 -->
+            <div class="panel-section">
+                <h3><span class="icon">🚛</span> 重型货车路径规划
+                    <button class="rt-refresh-btn" id="btn-refresh-rt" title="刷新实时数据">🔄</button>
+                </h3>
+
+                <!-- 导航引擎配置（已内置高德Key，用户端无需配置） -->
+                <div class="amap-key-section" style="display:none;">
+                    <div class="amap-key-label">🧭 导航引擎</div>
+                    <input type="text" id="amap-key-input" class="amap-key-input" placeholder="高德API Key（已内置默认Key）" >
+                    <button class="btn btn-outline btn-sm" id="btn-save-amap-key">保存</button>
+                    <div id="amap-key-status" class="amap-key-status">✅ 高德导航已启用（内置Key）</div>
+                    <a href="https://lbs.amap.com/dev/key/app" target="_blank" class="amap-key-link">→ 可申请自己的高德Key（Web服务类型）</a>
+                </div>
+                <div class="route-mode-selector">
+                    <label class="route-mode-option">
+                        <input type="radio" name="route-mode" value="highway" checked>
+                        <span>🛣️ 高速优先</span>
+                    </label>
+                    <label class="route-mode-option">
+                        <input type="radio" name="route-mode" value="national">
+                        <span>🛤️ 国道优先</span>
+                    </label>
+                    <label class="route-mode-option">
+                        <input type="radio" name="route-mode" value="shortest">
+                        <span>📏 最短距离</span>
+                    </label>
+                </div>
+                <div class="truck-mode-toggle" style="margin-top:8px;padding:6px 10px;background:rgba(33,150,243,0.08);border-radius:8px;display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" id="truck-mode" checked style="margin:0;">
+                    <label for="truck-mode" style="font-size:13px;font-weight:600;color:var(--primary);cursor:pointer;display:flex;align-items:center;gap:4px;">
+                        🚛 货车专用导航
+                    </label>
+                    <span style="font-size:11px;color:var(--text-secondary);flex:1;">自动规避限行/禁行区域</span>
+                </div>
+                <div class="mode-hint" id="mode-hint" style="display:none;"></div>
+                <div class="route-setup">
+                    <!-- 地名搜索 -->
+                    <div class="place-search-box">
+                        <div class="place-search-target">
+                            <label class="place-target-option active" data-target="end">
+                                <input type="radio" name="search-target" value="end" checked style="display:none;">
+                                <span>🏁 搜终点</span>
+                            </label>
+                            <label class="place-target-option" data-target="start">
+                                <input type="radio" name="search-target" value="start" style="display:none;">
+                                <span>📍 搜起点</span>
+                            </label>
+                        </div>
+                        <div class="place-search-input-wrap">
+                            <input type="text" id="place-search-input" class="search-input" placeholder="输入地名/公司名/地址搜索..." autocomplete="off">
+                            <button class="place-search-btn" id="btn-place-search">🔍</button>
+                        </div>
+                        <div class="place-search-results" id="place-search-results" style="display:none;"></div>
+                    </div>
+                    <div class="route-point">
+                        <div class="dot start"></div>
+                        <span class="label">起点</span>
+                        <span class="value" id="route-start-value" style="color:var(--text-secondary)">点击「设为起点」选择</span>
+                    </div>
+                    <div id="waypoint-list"></div>
+                    <div class="route-point">
+                        <div class="dot end"></div>
+                        <span class="label">终点</span>
+                        <span class="value" id="route-end-value" style="color:var(--text-secondary)">点击「设为终点」选择</span>
+                    </div>
+                    <div class="route-actions">
+                        <button class="btn btn-outline" id="btn-set-start">📍 设起点</button>
+                        <button class="btn btn-outline" id="btn-add-waypoint">➕ 途经点</button>
+                        <button class="btn btn-outline" id="btn-set-end">📍 设终点</button>
+                    </div>
+                    <div class="route-actions">
+                        <button class="btn btn-primary" id="btn-plan-route" disabled>🚛 规划路径</button>
+                        <button class="btn btn-outline" id="btn-clear-route">清除</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 路径详情 -->
+            <div class="panel-section" id="route-info" style="display:none;">
+                <h3><span class="icon">📋</span> 路径详情与费用</h3>
+                <div id="route-details"></div>
+            </div>
+
+            <!-- 云查车车辆追踪 -->
+            <div class="panel-section">
+                <h3><span class="icon">🚛</span> 车辆实时追踪
+                    <button class="rt-refresh-btn" id="btn-refresh-vehicles" title="刷新车辆位置">🔄</button>
+                </h3>
+                <!-- 连接状态 -->
+                <div class="vehicle-connect-section" id="vehicle-connect-section">
+                    <div class="vehicle-status-row" id="vehicle-status-row">
+                        <span class="vehicle-status-dot" id="vehicle-status-dot">⚪</span>
+                        <span class="vehicle-status-text" id="vehicle-status-text">正在连接云查车...</span>
+                    </div>
+                </div>
+                <!-- 车辆列表 -->
+                <div class="vehicle-list" id="vehicle-list" style="display:none;"></div>
+            </div>
+
+            <!-- 车辆参数（可自定义） -->
+            <div class="panel-section">
+                <div class="param-toggle" id="param-toggle">
+                    <span class="arrow">▶</span> ⚙️ 车辆参数设置（可自定义）
+                </div>
+                <div class="param-body">
+                    <div class="preset-btns">
+                        <button class="preset-btn" data-preset="standard">标准重卡 422kWh</button>
+                        <button class="preset-btn active" data-preset="large">大电池 600kWh</button>
+                        <button class="preset-btn" data-preset="light">轻量化 350kWh</button>
+                    </div>
+
+                    <div class="param-section-title">🔋 电池与能耗</div>
+                    <div class="param-form">
+                        <div class="param-group">
+                            <label>电池容量</label>
+                            <input type="number" class="param-input" id="param-battery" value="600" min="50" max="2000" step="1">
+                            <span class="param-unit">kWh</span>
+                        </div>
+                        <div class="param-group">
+                            <label>百公里能耗</label>
+                            <input type="number" class="param-input" id="param-consumption" value="180" min="50" max="500" step="1">
+                            <span class="param-unit">kWh</span>
+                        </div>
+                        <div class="param-group">
+                            <label>快充功率</label>
+                            <input type="number" class="param-input" id="param-power" value="600" min="30" max="1500" step="10">
+                            <span class="param-unit">kW</span>
+                        </div>
+                        <div class="param-group">
+                            <label>充电效率</label>
+                            <input type="number" class="param-input" id="param-efficiency" value="92" min="50" max="100" step="1">
+                            <span class="param-unit">%</span>
+                        </div>
+                        <div class="param-group">
+                            <label>最低电量</label>
+                            <input type="number" class="param-input" id="param-minsoc" value="15" min="5" max="40" step="1">
+                            <span class="param-unit">%</span>
+                        </div>
+                        <div class="param-group">
+                            <label>目标电量</label>
+                            <input type="number" class="param-input" id="param-targetsoc" value="85" min="50" max="100" step="1">
+                            <span class="param-unit">%</span>
+                        </div>
+                    </div>
+
+                    <div class="param-section-title">🛣️ ETC费率</div>
+                    <div class="param-form">
+                        <div class="param-group">
+                            <label>高速费率</label>
+                            <input type="number" class="param-input" id="param-etc-rate" value="2.50" min="0.5" max="10" step="0.1">
+                            <span class="param-unit">元/km</span>
+                        </div>
+                        <div class="param-group">
+                            <label>ETC折扣</label>
+                            <input type="number" class="param-input" id="param-etc-discount" value="95" min="50" max="100" step="1">
+                            <span class="param-unit">%</span>
+                        </div>
+                    </div>
+
+                    <div class="param-section-title">⚡ 充电费用 <span style="font-size:10px;font-weight:400;color:#999;">（综合电价=电费+服务费，按运营商实际定价）</span></div>
+                    <div class="param-form">
+                        <div class="param-group">
+                            <label>默认综合电价</label>
+                            <input type="number" class="param-input" id="param-default-elec" value="1.20" min="0.3" max="5" step="0.01">
+                            <span class="param-unit">元/kWh</span>
+                        </div>
+                        <div class="param-group">
+                            <label>司机时薪</label>
+                            <input type="number" class="param-input" id="param-driver-wage" value="35" min="10" max="200" step="1">
+                            <span class="param-unit">元/h</span>
+                        </div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-secondary);margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+                        <span>💡 修改参数后点击「规划路径」即可按新参数重新计算费用</span>
+                        <button class="btn btn-outline btn-sm" onclick="App.resetPriceConfig()" style="font-size:10px;padding:2px 8px;">恢复默认</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 地图区域 -->
+        <div id="map-container">
+            <div id="map"></div>
+
+            <!-- 浮动控件 -->
+            <div class="map-floating-panel">
+                <button class="map-floating-btn" id="btn-layer-switch" title="切换地图图层">🗺️</button>
+                <button class="map-floating-btn" id="btn-traffic" title="实时路况">🚦</button>
+                <button class="map-floating-btn" id="btn-map-type" title="切换卫星/标准">🛰️</button>
+            </div>
+
+            <!-- 图层切换面板 -->
+            <div class="layer-switch-panel" id="layer-switch-panel" style="display:none;">
+                <div class="layer-switch-title">🗺️ 地图图层</div>
+                <div class="layer-switch-option active" data-tile="standard">🗺️ 标准地图</div>
+                <div class="layer-switch-option" data-tile="detailed">📍 详细地图</div>
+                <div class="layer-switch-option" data-tile="satellite">🛰️ 卫星地图</div>
+                <div class="layer-switch-option" data-tile="hybrid">🌍 混合地图</div>
+            </div>
+
+            <!-- 峰谷电价悬浮提醒 -->
+            <div class="elec-widget" id="elec-widget">
+                <div class="elec-widget-header" id="elec-widget-header">
+                    <span class="elec-widget-icon">⚡</span>
+                    <div class="elec-widget-info">
+                        <div class="elec-widget-row">
+                            <span class="elec-widget-title" id="elec-period-label">--</span>
+                            <span class="elec-widget-price" id="elec-price-label">--</span>
+                        </div>
+                        <div class="elec-widget-time" id="elec-time-label">--</div>
+                        <div class="elec-widget-range" id="elec-range-label">--</div>
+                    </div>
+                </div>
+                <div class="elec-widget-body" id="elec-widget-body" style="display:none;">
+                    <div class="elec-timeline" id="elec-timeline"></div>
+                </div>
+            </div>
+
+            <!-- 统计横幅 -->
+            <div class="stats-banner">
+                <div class="stat-item">
+                    <span class="stat-num" id="stat-hq" style="color:#E91E63">0</span>
+                    <span class="stat-label">大本营</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-num" id="stat-factories">0</span>
+                    <span class="stat-label">工厂</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-num" id="stat-car-charging" style="color:#FF9800">0</span>
+                    <span class="stat-label">小型充电站</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-num" id="stat-charging" style="color:var(--secondary)">0</span>
+                    <span class="stat-label">重卡充电站</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-num" id="stat-chargers" style="color:var(--accent)">0</span>
+                    <span class="stat-label">充电桩</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-num" id="stat-spaces" style="color:#9C27B0">0</span>
+                    <span class="stat-label">重卡车位</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-num" id="stat-tolls" style="color:#607D8B">0</span>
+                    <span class="stat-label">收费站</span>
+                </div>
+            </div>
+
+            <!-- 图例 -->
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#E91E63"></div>
+                    <span>物流公司大本营</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--primary)"></div>
+                    <span>生产基地</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#FF9800"></div>
+                    <span>小型充电站</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:var(--secondary)"></div>
+                    <span>重卡充电站</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#9C27B0"></div>
+                    <span>充换电站</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#607D8B"></div>
+                    <span>收费站口</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#1976d2"></div>
+                    <span>追踪车辆</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background:var(--accent)"></div>
+                    <span>规划路径</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 加载动画 -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">加载中...</div>
+</div>
+
+<!-- 地图右键菜单 -->
+<div class="map-context-menu" id="map-context-menu">
+    <div class="ctx-item" data-action="start">📍 设为起点</div>
+    <div class="ctx-item" data-action="waypoint">➕ 添加途经点</div>
+    <div class="ctx-item" data-action="end">🏁 设为终点</div>
+    <div class="ctx-divider"></div>
+    <div class="ctx-item ctx-coords" id="ctx-coords">--</div>
+</div>
+
+<!-- 脚本 -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/coords.js"></script>
+<script src="js/tollstations.js"></script>
+<script src="js/data.js"></script>
+<script src="js/routing.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

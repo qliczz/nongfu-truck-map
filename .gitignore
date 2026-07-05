@@ -1,0 +1,26 @@
+# WorkBuddy internal
+.workbuddy/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# Dev/verification scripts (contain API keys, not for public repo)
+verify-*.js
+find-correct-coords.js
+coord-verification-*.json
+test_*.js

@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理 · 充电物流地图</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #00a86b;
+            --primary-dark: #008556;
+            --secondary: #2196F3;
+            --accent: #FF6B35;
+            --bg: #f0f2f5;
+            --card-bg: #fff;
+            --text: #1a1a2e;
+            --text-secondary: #6c757d;
+            --border: #e0e0e0;
+            --danger: #f44336;
+            --warning: #FF9800;
+            --radius: 8px;
+        }
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+        #app { display: flex; flex-direction: column; height: 100%; }
+
+        /* Header */
+        .admin-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            flex-shrink: 0;
+        }
+        .admin-header h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .admin-header .subtitle { font-size: 12px; opacity: 0.6; margin-left: 12px; }
+        .header-actions { display: flex; gap: 8px; }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: #fff; }
+        .btn-secondary:hover { background: #1976D2; }
+        .btn-outline { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+        .btn-outline:hover { background: rgba(255,255,255,0.25); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #d32f2f; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .btn-warning { background: var(--warning); color: #fff; }
+
+        /* Tabs */
+        .tab-bar {
+            display: flex;
+            background: var(--card-bg);
+            border-bottom: 2px solid var(--border);
+            padding: 0 16px;
+            flex-shrink: 0;
+            overflow-x: auto;
+        }
+        .tab-btn {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-badge {
+            display: inline-block;
+            background: var(--border);
+            color: var(--text-secondary);
+            border-radius: 10px;
+            padding: 1px 8px;
+            font-size: 11px;
+            margin-left: 6px;
+        }
+        .tab-btn.active .tab-badge { background: rgba(0,168,107,0.15); color: var(--primary); }
+
+        /* Content */
+        .content-area {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+        }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Table */
+        .data-table-wrap {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            overflow: auto;
+            margin-bottom: 16px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 800px;
+        }
+        .data-table th {
+            background: #f5f7fa;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+            z-index: 1;
+        }
+        .data-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        .data-table tr:hover { background: #f9fbfc; }
+        .data-table input, .data-table select {
+            width: 100%;
+            padding: 5px 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+        .data-table input:focus, .data-table select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0,168,107,0.1);
+        }
+        .data-table input[type="number"] { width: 80px; }
+        .data-table input[type="checkbox"] { width: auto; }
+        .data-table .col-actions { white-space: nowrap; text-align: center; width: 80px; }
+        .data-table .col-id { color: var(--text-secondary); font-size: 11px; font-family: monospace; }
+        .row-new { background: #fffde7 !important; }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .toolbar-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .toolbar-right { display: flex; gap: 8px; align-items: center; }
+        .search-box {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 13px;
+            width: 240px;
+        }
+
+        /* Config panel */
+        .config-panel {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            padding: 20px 24px;
+            max-width: 600px;
+        }
+        .config-group { margin-bottom: 20px; }
+        .config-group-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+        .config-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .config-row label {
+            width: 140px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .config-row input {
+            flex: 1;
+            max-width: 200px;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .config-row .unit { font-size: 12px; color: var(--text-secondary); }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: auto;
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { font-size: 16px; }
+        .modal-body { padding: 20px; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 4px;
+        }
+        .modal-form-group { margin-bottom: 12px; }
+        .modal-form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+        .modal-form-group input, .modal-form-group textarea, .modal-form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .modal-form-group textarea { resize: vertical; min-height: 60px; }
+        .modal-form-row { display: flex; gap: 12px; }
+        .modal-form-row .modal-form-group { flex: 1; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1a1a2e;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10000;
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { background: var(--primary); }
+        .toast.error { background: var(--danger); }
+
+        /* Code output */
+        .code-output {
+            background: #1a1a2e;
+            color: #a5d6a7;
+            padding: 16px;
+            border-radius: var(--radius);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .stat-cards { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            min-width: 140px;
+        }
+        .stat-card .num { font-size: 28px; font-weight: 700; }
+        .stat-card .label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+        .empty-hint { text-align: center; padding: 40px; color: var(--text-secondary); font-size: 14px; }
+        .back-link { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; }
+        .back-link:hover { color: #fff; }
+
+        /* ===== 密码登录遮罩 ===== */
+        .auth-overlay {
+            position: fixed; inset: 0; z-index: 99999;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .auth-overlay.hidden { display: none; }
+        .auth-card {
+            background: #fff; border-radius: 16px; padding: 36px 32px;
+            width: 340px; max-width: 90%; text-align: center;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+        }
+        .auth-logo { font-size: 42px; margin-bottom: 12px; }
+        .auth-card h2 { font-size: 18px; color: var(--text); margin-bottom: 4px; }
+        .auth-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+        .auth-input {
+            width: 100%; padding: 12px 14px; border: 2px solid var(--border);
+            border-radius: 8px; font-size: 15px; text-align: center;
+            margin-bottom: 14px; transition: border-color 0.2s; letter-spacing: 2px;
+        }
+        .auth-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,168,107,0.12); }
+        .auth-btn { width: 100%; padding: 12px; font-size: 15px; justify-content: center; }
+        .auth-error { color: var(--danger); font-size: 12px; margin-top: 8px; min-height: 16px; }
+        .auth-back { display: block; margin-top: 16px; font-size: 12px; color: var(--text-secondary); text-decoration: none; }
+        .auth-back:hover { color: var(--primary); }
+    </style>
+</head>
+<body>
+<!-- 密码登录遮罩 -->
+<div class="auth-overlay" id="auth-overlay">
+    <div class="auth-card">
+        <div class="auth-logo">🔐</div>
+        <h2>充电物流地图</h2>
+        <p class="auth-subtitle">后台管理系统</p>
+        <input type="password" class="auth-input" id="auth-password" placeholder="请输入管理密码" autocomplete="off">
+        <button class="btn btn-primary auth-btn" id="auth-submit">进 入</button>
+        <div class="auth-error" id="auth-error"></div>
+        <a href="index.html" class="auth-back">← 返回用户端</a>
+    </div>
+</div>
+<div id="app">
+    <!-- Header -->
+    <div class="admin-header">
+        <h1>🔧 后台管理 <span class="subtitle">充电物流地图 · 数据管理</span></h1>
+        <div class="header-actions">
+            <a href="index.html" class="back-link">← 返回用户端</a>
+            <button class="btn btn-outline btn-sm" onclick="Admin.exportJSON()">📥 导出JSON</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()">📤 导入JSON</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="Admin.importJSON(event)">
+            <button class="btn btn-primary btn-sm" onclick="Admin.generateCode()">⚙️ 生成data.js</button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+        <button class="tab-btn active" data-tab="dashboard">📊 总览</button>
+        <button class="tab-btn" data-tab="factories">🏭 工厂 <span class="tab-badge" id="badge-factories">0</span></button>
+        <button class="tab-btn" data-tab="charging">⚡ 重卡充电站 <span class="tab-badge" id="badge-charging">0</span></button>
+        <button class="tab-btn" data-tab="carCharging">🚗 小型充电站 <span class="tab-badge" id="badge-carCharging">0</span></button>
+        <button class="tab-btn" data-tab="truckConfig">🚛 货车参数</button>
+        <button class="tab-btn" data-tab="costConfig">💰 费用参数</button>
+    </div>
+
+    <!-- Content -->
+    <div class="content-area">
+
+        <!-- Dashboard -->
+        <div class="tab-panel active" id="panel-dashboard">
+            <div class="stat-cards">
+                <div class="stat-card"><div class="num" style="color:var(--primary)" id="dash-factories">0</div><div class="label">生产基地</div></div>
+                <div class="stat-card"><div class="num" style="color:#FF9800" id="dash-carCharging">0</div><div class="label">小型充电站</div></div>
+                <div class="stat-card"><div class="num" style="color:var(--secondary)" id="dash-charging">0</div><div class="label">重卡充电站</div></div>
+                <div class="stat-card"><div class="num" style="color:var(--accent)" id="dash-chargers">0</div><div class="label">总充电桩数</div></div>
+                <div class="stat-card"><div class="num" style="color:#9C27B0" id="dash-spaces">0</div><div class="label">总重卡车位</div></div>
+            </div>
+            <div class="config-panel">
+                <div class="config-group-title">📋 数据管理说明</div>
+                <div style="font-size:13px;line-height:1.8;color:var(--text-secondary);">
+                    <p>• 本页面用于管理地图标注点数据，修改后请点击「生成data.js」下载最新数据文件</p>
+                    <p>• 将下载的 <code>data.js</code> 替换项目中的 <code>js/data.js</code> 即可更新地图</p>
+                    <p>• 「导出JSON」可备份数据，「导入JSON」可恢复数据</p>
+                    <p>• 坐标使用 WGS-84 标准，地图显示时自动转换为 GCJ-02 适配高德瓦片</p>
+                    <p>• 可通过 <a href="https://lbs.amap.com/api/webservice/guide/api/search" target="_blank">高德POI API</a> 获取精确坐标</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factories -->
+        <div class="tab-panel" id="panel-factories">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <input type="text" class="search-box" id="search-factories" placeholder="搜索工厂..." oninput="Admin.renderTable('factories')">
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-primary btn-sm" onclick="Admin.openAddModal('factory')">➕ 添加工厂</button>
+                </div>
+            </div>
+            <div class="data-table-wrap">
+                <table class="data-table" id="table-factories"></table>
+            </div>
+        </div>
+
+        <!-- Charging Stations -->
+        <div class="tab-panel" id="panel-charging">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <input type="text" class="search-box" id="search-charging" placeholder="搜索重卡充电站..." oninput="Admin.renderTable('charging')">
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-primary btn-sm" onclick="Admin.openAddModal('charging')">➕ 添加重卡充电站</button>
+                </div>
+            </div>
+            <div class="data-table-wrap">
+                <table class="data-table" id="table-charging"></table>
+            </div>
+        </div>
+
+        <!-- Car Charging Stations -->
+        <div class="tab-panel" id="panel-carCharging">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <input type="text" class="search-box" id="search-carCharging" placeholder="搜索小型充电站..." oninput="Admin.renderTable('carCharging')">
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-primary btn-sm" onclick="Admin.openAddModal('carCharging')">➕ 添加小型充电站</button>
+                </div>
+            </div>
+            <div class="data-table-wrap">
+                <table class="data-table" id="table-carCharging"></table>
+            </div>
+        </div>
+
+        <!-- Truck Config -->
+        <div class="tab-panel" id="panel-truckConfig">
+            <div class="config-panel" id="config-truck"></div>
+        </div>
+
+        <!-- Cost Config -->
+        <div class="tab-panel" id="panel-costConfig">
+            <div class="config-panel" id="config-cost"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modal-title">添加</h3>
+            <button class="modal-close" onclick="Admin.closeModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline btn-sm" onclick="Admin.closeModal()">取消</button>
+            <button class="btn btn-primary btn-sm" onclick="Admin.saveModal()">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Code Output Modal -->
+<div class="modal-overlay" id="code-overlay">
+    <div class="modal" style="max-width:800px;">
+        <div class="modal-header">
+            <h3>生成的 data.js 代码</h3>
+            <button class="modal-close" onclick="document.getElementById('code-overlay').classList.remove('show')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="code-output" id="code-output"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline btn-sm" onclick="Admin.copyCode()">📋 复制代码</button>
+            <button class="btn btn-primary btn-sm" onclick="Admin.downloadCode()">💾 下载文件</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script>
+// ===== 后台密码保护 =====
+const ADMIN_PASSWORD = 'admin';
+const AUTH_KEY = 'admin_auth_lantuo';
+
+function checkAuth() {
+    if (sessionStorage.getItem(AUTH_KEY) === 'ok') {
+        document.getElementById('auth-overlay').classList.add('hidden');
+        return true;
+    }
+    return false;
+}
+
+function tryLogin() {
+    const input = document.getElementById('auth-password');
+    const errEl = document.getElementById('auth-error');
+    if (input.value === ADMIN_PASSWORD) {
+        sessionStorage.setItem(AUTH_KEY, 'ok');
+        document.getElementById('auth-overlay').classList.add('hidden');
+        errEl.textContent = '';
+        input.value = '';
+    } else {
+        errEl.textContent = '❌ 密码错误，请重试';
+        input.value = '';
+        input.focus();
+        input.style.borderColor = 'var(--danger)';
+        setTimeout(() => { input.style.borderColor = ''; }, 1500);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    if (!checkAuth()) {
+        const overlay = document.getElementById('auth-overlay');
+        const input = document.getElementById('auth-password');
+        const btn = document.getElementById('auth-submit');
+        input.focus();
+        btn.addEventListener('click', tryLogin);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+        return; // 未认证，不初始化后台
+    }
+    Admin.init();
+});
+
+const Admin = {
+    data: null,
+    editType: null,
+    editIndex: -1,
+
+    init() {
+        // 深拷贝原始数据，避免直接修改
+        this.data = JSON.parse(JSON.stringify(MAP_DATA));
+        this.updateBadges();
+        this.renderAllTables();
+        this.renderConfig('truck');
+        this.renderConfig('cost');
+        this.bindTabs();
+        this.updateDashboard();
+    },
+
+    bindTabs() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+    },
+
+    updateBadges() {
+        document.getElementById('badge-factories').textContent = this.data.factories.length;
+        document.getElementById('badge-charging').textContent = this.data.chargingStations.length;
+        document.getElementById('badge-carCharging').textContent = this.data.carChargingStations.length;
+    },
+
+    updateDashboard() {
+        document.getElementById('dash-factories').textContent = this.data.factories.length;
+        document.getElementById('dash-carCharging').textContent = this.data.carChargingStations.length;
+        document.getElementById('dash-charging').textContent = this.data.chargingStations.length;
+        document.getElementById('dash-chargers').textContent = this.data.chargingStations.reduce((s, c) => s + c.chargers, 0);
+        document.getElementById('dash-spaces').textContent = this.data.chargingStations.reduce((s, c) => s + c.truckSpaces, 0);
+    },
+
+    renderAllTables() {
+        this.renderTable('factories');
+        this.renderTable('charging');
+        this.renderTable('carCharging');
+    },
+
+    // ========== 表格渲染 ==========
+    renderTable(type) {
+        const tableId = type === 'factories' ? 'table-factories' :
+                        type === 'charging' ? 'table-charging' : 'table-carCharging';
+        const table = document.getElementById(tableId);
+        if (!table) return;
+
+        const searchId = 'search-' + type;
+        const searchEl = document.getElementById(searchId);
+        const q = (searchEl?.value || '').toLowerCase();
+
+        let rows;
+        if (type === 'factories') rows = this.data.factories;
+        else if (type === 'charging') rows = this.data.chargingStations;
+        else rows = this.data.carChargingStations;
+
+        const filtered = q ? rows.filter(r =>
+            JSON.stringify(r).toLowerCase().includes(q)
+        ) : rows;
+
+        if (filtered.length === 0) {
+            table.innerHTML = `<tbody><tr><td colspan="20" class="empty-hint">暂无数据</td></tr></tbody>`;
+            return;
+        }
+
+        let html = '<thead><tr>';
+        // Headers based on type
+        const cols = this.getColumns(type);
+        cols.forEach(c => html += `<th>${c.label}</th>`);
+        html += '<th class="col-actions">操作</th></tr></thead><tbody>';
+
+        filtered.forEach(row => {
+            const realIndex = rows.indexOf(row);
+            html += '<tr>';
+            cols.forEach(c => {
+                const val = row[c.key];
+                if (c.type === 'checkbox') {
+                    html += `<td><input type="checkbox" ${val ? 'checked' : ''} onchange="Admin.updateField('${type}',${realIndex},'${c.key}',this.checked)"></td>`;
+                } else if (c.type === 'number') {
+                    html += `<td><input type="number" value="${val ?? ''}" onchange="Admin.updateField('${type}',${realIndex},'${c.key}',this.value)"></td>`;
+                } else if (c.type === 'select') {
+                    html += `<td><select onchange="Admin.updateField('${type}',${realIndex},'${c.key}',this.value)">${c.options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}</select></td>`;
+                } else {
+                    html += `<td><input type="text" value="${this.escape(val ?? '')}" onchange="Admin.updateField('${type}',${realIndex},'${c.key}',this.value)"></td>`;
+                }
+            });
+            html += `<td class="col-actions"><button class="btn btn-danger btn-sm" onclick="Admin.deleteRow('${type}',${realIndex})">删除</button></td>`;
+            html += '</tr>';
+        });
+
+        html += '</tbody>';
+        table.innerHTML = html;
+    },
+
+    getColumns(type) {
+        if (type === 'factories') {
+            return [
+                { key: 'id', label: 'ID', type: 'text' },
+                { key: 'name', label: '名称', type: 'text' },
+                { key: 'address', label: '地址', type: 'text' },
+                { key: 'lng', label: '经度', type: 'number' },
+                { key: 'lat', label: '纬度', type: 'number' },
+                { key: 'water', label: '水源', type: 'text' },
+                { key: 'capacity', label: '规模', type: 'text' },
+                { key: 'phone', label: '电话', type: 'text' },
+            ];
+        }
+        if (type === 'charging') {
+            return [
+                { key: 'id', label: 'ID', type: 'text' },
+                { key: 'name', label: '名称', type: 'text' },
+                { key: 'operator', label: '运营商', type: 'text' },
+                { key: 'lng', label: '经度', type: 'number' },
+                { key: 'lat', label: '纬度', type: 'number' },
+                { key: 'powerKW', label: '功率kW', type: 'number' },
+                { key: 'chargers', label: '充电桩', type: 'number' },
+                { key: 'truckSpaces', label: '车位', type: 'number' },
+                { key: 'hasSwap', label: '换电', type: 'checkbox' },
+                { key: 'highway', label: '高速/道路', type: 'text' },
+                { key: 'region', label: '区域', type: 'text' },
+                { key: 'basePrice', label: '基础电价', type: 'number' },
+            ];
+        }
+        // carCharging
+        return [
+            { key: 'id', label: 'ID', type: 'text' },
+            { key: 'name', label: '名称', type: 'text' },
+            { key: 'operator', label: '运营商', type: 'text' },
+            { key: 'address', label: '地址', type: 'text' },
+            { key: 'lng', label: '经度', type: 'number' },
+            { key: 'lat', label: '纬度', type: 'number' },
+            { key: 'region', label: '区域', type: 'text' },
+            { key: 'open24h', label: '24h', type: 'checkbox' },
+        ];
+    },
+
+    escape(s) {
+        return String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    },
+
+    // ========== 数据操作 ==========
+    updateField(type, index, key, value) {
+        let arr;
+        if (type === 'factories') arr = this.data.factories;
+        else if (type === 'charging') arr = this.data.chargingStations;
+        else arr = this.data.carChargingStations;
+
+        if (!arr[index]) return;
+        // 自动转换数字字段
+        const cols = this.getColumns(type);
+        const col = cols.find(c => c.key === key);
+        if (col && col.type === 'number') {
+            arr[index][key] = parseFloat(value) || 0;
+        } else if (col && col.type === 'checkbox') {
+            arr[index][key] = !!value;
+        } else {
+            arr[index][key] = value;
+        }
+        this.updateDashboard();
+    },
+
+    deleteRow(type, index) {
+        if (!confirm('确认删除该条数据？')) return;
+        let arr;
+        if (type === 'factories') arr = this.data.factories;
+        else if (type === 'charging') arr = this.data.chargingStations;
+        else arr = this.data.carChargingStations;
+
+        arr.splice(index, 1);
+        this.renderAllTables();
+        this.updateBadges();
+        this.updateDashboard();
+        this.toast('已删除', 'success');
+    },
+
+    // ========== 添加模态框 ==========
+    openAddModal(type) {
+        this.editType = type;
+        const titleMap = { factory: '添加工厂', charging: '添加重卡充电站', carCharging: '添加小型充电站' };
+        document.getElementById('modal-title').textContent = titleMap[type] || '添加';
+
+        const cols = this.getColumns(type === 'factories' ? 'factories' : type);
+        let html = '';
+        cols.forEach(c => {
+            const defaultVal = c.type === 'checkbox' ? false : c.type === 'number' ? 0 : '';
+            if (c.type === 'checkbox') {
+                html += `<div class="modal-form-group"><label>${c.label}</label><input type="checkbox" id="modal-${c.key}" ${defaultVal ? 'checked' : ''}></div>`;
+            } else {
+                html += `<div class="modal-form-group"><label>${c.label}</label><input type="${c.type === 'number' ? 'number' : 'text'}" id="modal-${c.key}" value="${defaultVal}"></div>`;
+            }
+        });
+
+        // 额外字段
+        if (type === 'factory') {
+            html += `<div class="modal-form-group"><label>描述</label><textarea id="modal-desc"></textarea></div>`;
+            html += `<div class="modal-form-group"><label>公司</label><input type="text" id="modal-company"></div>`;
+        } else if (type === 'charging') {
+            html += `<div class="modal-form-group"><label>地址</label><input type="text" id="modal-address"></div>`;
+            html += `<div class="modal-form-group"><label>枪型</label><input type="text" id="modal-gunType" value="直流快充"></div>`;
+            html += `<div class="modal-form-group"><label>方向</label><select id="modal-direction"><option value="双向">双向</option><option value="东行">东行</option><option value="西行">西行</option><option value="南行">南行</option><option value="北行">北行</option><option value="不限">不限</option></select></div>`;
+            html += `<div class="modal-form-group"><label>服务费</label><input type="number" id="modal-serviceFee" value="0.40" step="0.01"></div>`;
+            html += `<div class="modal-form-group"><label>24小时</label><input type="checkbox" id="modal-open24h" checked></div>`;
+            html += `<div class="modal-form-group"><label>描述</label><textarea id="modal-desc"></textarea></div>`;
+            html += `<div class="modal-form-group"><label>电话</label><input type="text" id="modal-phone"></div>`;
+        } else if (type === 'carCharging') {
+            html += `<div class="modal-form-group"><label>地址</label><input type="text" id="modal-address"></div>`;
+        }
+
+        document.getElementById('modal-body').innerHTML = html;
+        document.getElementById('modal-overlay').classList.add('show');
+    },
+
+    closeModal() {
+        document.getElementById('modal-overlay').classList.remove('show');
+        this.editType = null;
+    },
+
+    saveModal() {
+        if (!this.editType) return;
+        const type = this.editType;
+        const get = (key) => {
+            const el = document.getElementById('modal-' + key);
+            if (!el) return undefined;
+            if (el.type === 'checkbox') return el.checked;
+            if (el.type === 'number') return parseFloat(el.value) || 0;
+            return el.value.trim();
+        };
+
+        const cols = this.getColumns(type);
+        const newObj = {};
+        cols.forEach(c => {
+            newObj[c.key] = get(c.key);
+            if (c.type === 'number') newObj[c.key] = parseFloat(get(c.key)) || 0;
+            if (c.type === 'checkbox') newObj[c.key] = !!get(c.key);
+        });
+
+        // 额外字段
+        if (type === 'factory') {
+            newObj.desc = get('desc') || '';
+            newObj.company = get('company') || '';
+        } else if (type === 'charging') {
+            newObj.address = get('address') || '';
+            newObj.gunType = get('gunType') || '直流快充';
+            newObj.direction = get('direction') || '双向';
+            newObj.serviceFee = parseFloat(get('serviceFee')) || 0.40;
+            newObj.open24h = !!get('open24h');
+            newObj.desc = get('desc') || '';
+            newObj.phone = get('phone') || '';
+        } else if (type === 'carCharging') {
+            newObj.address = get('address') || '';
+        }
+
+        // 自动生成ID
+        if (!newObj.id) {
+            const prefix = type === 'factory' ? 'nf-' : type === 'charging' ? 'cs-' : 'cc-';
+            let arr;
+            if (type === 'factory') arr = this.data.factories;
+            else if (type === 'charging') arr = this.data.chargingStations;
+            else arr = this.data.carChargingStations;
+            newObj.id = prefix + Date.now().toString(36);
+        }
+
+        if (type === 'factory') this.data.factories.push(newObj);
+        else if (type === 'charging') this.data.chargingStations.push(newObj);
+        else this.data.carChargingStations.push(newObj);
+
+        this.closeModal();
+        this.renderAllTables();
+        this.updateBadges();
+        this.updateDashboard();
+        this.toast('已添加', 'success');
+    },
+
+    // ========== 配置面板 ==========
+    renderConfig(type) {
+        const containerId = type === 'truck' ? 'config-truck' : 'config-cost';
+        const container = document.getElementById(containerId);
+        const config = type === 'truck' ? this.data.truckConfig : this.data.costConfig;
+
+        let html = `<div class="config-group"><div class="config-group-title">${type === 'truck' ? '🚛 货车参数' : '💰 费用参数'}</div>`;
+        Object.entries(config).forEach(([key, val]) => {
+            const isPercent = key.includes('SOC') || key === 'chargingEfficiency' || key === 'etcDiscount' || key === 'minSOC' || key === 'targetSOC';
+            html += `<div class="config-row">
+                <label>${key}</label>
+                <input type="number" value="${val}" step="0.01" onchange="Admin.updateConfig('${type}','${key}',this.value)">
+                <span class="unit">${isPercent ? '(0-1)' : ''}</span>
+            </div>`;
+        });
+        html += '</div>';
+        html += `<div style="margin-top:16px;"><button class="btn btn-primary btn-sm" onclick="Admin.toast('配置已保存到内存，请点击「生成data.js」导出','success')">💾 保存配置</button></div>`;
+        container.innerHTML = html;
+    },
+
+    updateConfig(type, key, value) {
+        const config = type === 'truck' ? this.data.truckConfig : this.data.costConfig;
+        config[key] = parseFloat(value) || 0;
+    },
+
+    // ========== 导出/导入 ==========
+    exportJSON() {
+        const json = JSON.stringify(this.data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'map-data-' + new Date().toISOString().slice(0, 10) + '.json';
+        a.click();
+        this.toast('已导出JSON', 'success');
+    },
+
+    importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (!imported.factories || !imported.chargingStations) throw new Error('数据格式不正确');
+                this.data = imported;
+                if (!this.data.carChargingStations) this.data.carChargingStations = [];
+                this.renderAllTables();
+                this.renderConfig('truck');
+                this.renderConfig('cost');
+                this.updateBadges();
+                this.updateDashboard();
+                this.toast('导入成功', 'success');
+            } catch (err) {
+                this.toast('导入失败: ' + err.message, 'error');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    },
+
+    // ========== 生成 data.js ==========
+    generateCode() {
+        const code = this.buildDataJS();
+        document.getElementById('code-output').textContent = code;
+        document.getElementById('code-overlay').classList.add('show');
+    },
+
+    buildDataJS() {
+        const j = (obj) => JSON.stringify(obj, null, 8).replace(/^/gm, (match, offset) => offset === 0 ? '' : '').replace(/\n/g, '\n');
+
+        const formatArray = (arr, indent) => {
+            if (!arr.length) return '[]';
+            let s = '[\n';
+            arr.forEach((item, i) => {
+                s += indent + '    ' + JSON.stringify(item) + (i < arr.length - 1 ? ',' : '') + '\n';
+            });
+            s += indent + ']';
+            return s;
+        };
+
+        let code = `/**
+ * 工厂 & 充电站数据
+ * 坐标统一使用 WGS-84（显示时由 coords.js 转为 GCJ-02）
+ * 由后台管理系统生成于 ${new Date().toLocaleString('zh-CN')}
+ */
+
+const MAP_DATA = {
+
+    /* ===== 生产基地 ===== */
+    factories: ${formatArray(this.data.factories, '    ')},
+
+    /* ===== 重卡充电站 ===== */
+    chargingStations: ${formatArray(this.data.chargingStations, '    ')},
+
+    /* ===== 汽车充电站（普通乘用车） ===== */
+    carChargingStations: ${formatArray(this.data.carChargingStations, '    ')},
+
+    /* 货车参数 */
+    truckConfig: ${JSON.stringify(this.data.truckConfig, null, 8).replace(/\n/g, '\n    ')},
+
+    /* 费用参数 */
+    costConfig: ${JSON.stringify(this.data.costConfig, null, 8).replace(/\n/g, '\n    ')},
+
+    /* 实时电价时段定义 */
+    timeOfUse: ${JSON.stringify(this.data.timeOfUse, null, 8).replace(/\n/g, '\n    ')}
+};
+
+`;
+
+        // 追加 RealTimeData 模块（从原始文件复制）
+        code += `/**
+ * 实时数据模拟模块
+ */
+const RealTimeData = ${this.getRealTimeCode()};`;
+
+        return code;
+    },
+
+    getRealTimeCode() {
+        // 返回 RealTimeData 对象的源码
+        return `{
+
+    getCurrentPeriod() {
+        const hour = new Date().getHours();
+        const tou = MAP_DATA.timeOfUse;
+        if (hour >= tou.offPeak.start && hour < tou.offPeak.end) return { ...tou.offPeak, type: 'offPeak' };
+        if (hour >= tou.sharpPeak.start && hour < tou.sharpPeak.end) return { ...tou.sharpPeak, type: 'sharpPeak' };
+        for (const [s, e] of tou.onPeak.slots) { if (hour >= s && hour < e) return { ...tou.onPeak, type: 'onPeak' }; }
+        for (const [s, e] of tou.midPeak.slots) { if (hour >= s && hour < e) return { ...tou.midPeak, type: 'midPeak' }; }
+        return { ...tou.midPeak, type: 'midPeak' };
+    },
+
+    getStationRealTime(station) {
+        const period = this.getCurrentPeriod();
+        const now = new Date();
+        const seed = parseInt(station.id.replace(/[^0-9]/g, ''), 10) || 1;
+        const minuteSeed = now.getHours() * 60 + now.getMinutes();
+        const rand = (offset) => { const v = Math.sin(seed * 9.7 + minuteSeed * 0.13 + offset) * 10000; return v - Math.floor(v); };
+        const currentPrice = (station.basePrice || 1.15) * period.multiplier;
+        const dayFactor = now.getHours() >= 8 && now.getHours() <= 20 ? 0.4 : 0.75;
+        const available = Math.max(0, Math.floor(station.chargers * dayFactor * (0.6 + rand(1) * 0.4)));
+        const availSpaces = Math.max(0, Math.floor(station.truckSpaces * dayFactor * (0.5 + rand(2) * 0.5)));
+        const queue = Math.max(0, Math.floor(rand(3) * (station.chargers - available) * 0.3));
+        const waitTime = queue * Math.floor(8 + rand(4) * 12);
+        let swapInfo = '';
+        if (station.hasSwap) { const swapAvail = Math.floor(rand(5) * 8) + 2; swapInfo = '换电电池组可用：' + swapAvail + '组'; }
+        return {
+            period: period.label, periodType: period.type,
+            currentPrice: currentPrice.toFixed(2),
+            serviceFee: (station.serviceFee || 0.40).toFixed(2),
+            totalRate: (currentPrice + (station.serviceFee || 0.40)).toFixed(2),
+            availableChargers: available, totalChargers: station.chargers,
+            availableSpaces: availSpaces, totalSpaces: station.truckSpaces,
+            queue: queue, waitTime: waitTime, swapInfo: swapInfo,
+            lastUpdate: now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0'),
+            timestamp: now.getTime()
+        };
+    },
+
+    formatTimestamp(ts) {
+        const d = new Date(ts);
+        return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') + ':' + d.getSeconds().toString().padStart(2,'0');
+    }
+}`;
+    },
+
+    copyCode() {
+        const code = document.getElementById('code-output').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            this.toast('代码已复制到剪贴板', 'success');
+        }).catch(() => {
+            this.toast('复制失败，请手动选择复制', 'error');
+        });
+    },
+
+    downloadCode() {
+        const code = document.getElementById('code-output').textContent;
+        const blob = new Blob([code], { type: 'text/javascript' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'data.js';
+        a.click();
+        this.toast('data.js 已下载', 'success');
+    },
+
+    // ========== Toast ==========
+    toast(msg, type) {
+        const el = document.getElementById('toast');
+        el.textContent = (type === 'success' ? '✅ ' : type === 'error' ? '❌ ' : 'ℹ️ ') + msg;
+        el.className = 'toast ' + (type || '') + ' show';
+        setTimeout(() => el.classList.remove('show'), 2500);
+    }
+};
+</script>
+</body>
+</html>

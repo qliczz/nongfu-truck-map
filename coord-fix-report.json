@@ -1,0 +1,207 @@
+[
+  {
+    "id": "cs-dayun",
+    "name": "大云重卡充电站",
+    "status": "OK",
+    "storedCoord": "120.945539, 30.802322",
+    "correctCoord": "120.945539, 30.802322",
+    "poiName": "嘉善收费站(G60沪昆高速出口大云方向)",
+    "poiAddress": "嘉善县",
+    "distance": 0,
+    "needFix": false
+  },
+  {
+    "id": "cs-meishan",
+    "name": "宁波梅山港超充站群",
+    "status": "OK",
+    "storedCoord": "122.015706, 29.78543",
+    "correctCoord": "122.015706, 29.785430",
+    "poiName": "启源芯动力换电站(宁波梅山港站)",
+    "poiAddress": "国家电投梅山港换电站西北侧",
+    "distance": 0,
+    "needFix": false
+  },
+  {
+    "id": "cs-keqiao",
+    "name": "绍兴柯桥充电站群",
+    "status": "OK",
+    "storedCoord": "120.602505, 30.105217",
+    "correctCoord": "120.602505, 30.105217",
+    "poiName": "力氪汽车充电站(绍兴集卡力氪)",
+    "poiAddress": "三江西路与中兴大道辅路交叉口西220米",
+    "distance": 0,
+    "needFix": false
+  },
+  {
+    "id": "cs-fuyang",
+    "name": "富阳服务区充电站",
+    "status": "OK",
+    "storedCoord": "119.826266, 30.044706",
+    "correctCoord": "119.826266, 30.044706",
+    "poiName": "富阳服务区",
+    "poiAddress": "富阳区",
+    "distance": 0,
+    "needFix": false
+  },
+  {
+    "id": "cs-yiwu",
+    "name": "义乌服务区充电站",
+    "status": "OK",
+    "storedCoord": "119.929076, 29.227891",
+    "correctCoord": "119.929076, 29.227891",
+    "poiName": "服务区(甬金高速金华方向)(建设中)",
+    "poiAddress": "义乌市",
+    "distance": 0,
+    "needFix": false
+  },
+  {
+    "id": "cs-zhangyang",
+    "name": "张杨北路充换电站",
+    "status": "OK",
+    "storedCoord": "121.584796, 31.293426",
+    "correctCoord": "121.584796, 31.293426",
+    "poiName": "张杨北路",
+    "poiAddress": "浦东新区",
+    "distance": 0,
+    "needFix": false
+  },
+  {
+    "id": "cs-yangshan",
+    "name": "洋山港集卡充电站",
+    "status": "WARN",
+    "storedCoord": "122.0647, 30.6147",
+    "correctCoord": "122.066744, 30.622362",
+    "poiName": "洋山集装箱码头",
+    "poiAddress": "东海大道",
+    "distance": 874,
+    "needFix": true
+  },
+  {
+    "id": "cs-changxing",
+    "name": "湖州长兴换电站群",
+    "status": "ERROR",
+    "storedCoord": "119.908, 30.998",
+    "correctCoord": "119.938048, 30.983736",
+    "poiName": "昆仑网电汽车充电站(昆仑网电强能重卡兆瓦超充站)",
+    "poiAddress": "雉城五里桥村104国道旁中国石油强能加油站",
+    "distance": 3274,
+    "needFix": true
+  },
+  {
+    "id": "cs-lingang",
+    "name": "临港充换电站",
+    "status": "OK",
+    "storedCoord": "121.901668, 30.896881",
+    "correctCoord": "121.901668, 30.896881",
+    "poiName": "临港",
+    "poiAddress": "浦东新区",
+    "distance": 0,
+    "needFix": false
+  },
+  {
+    "id": "cc-hz-01",
+    "name": "星星充电(东宁路新能源二期)",
+    "status": "NOT_FOUND",
+    "storedCoord": "119.83246, 29.781025",
+    "message": "所有搜索策略均未找到匹配POI"
+  },
+  {
+    "id": "cc-hz-02",
+    "name": "国家电网(上城香樟街站)",
+    "status": "NEARBY_ONLY",
+    "storedCoord": "119.834685, 29.723231",
+    "message": "文本搜索未找到精确匹配，附近有充电站但无法确认是否为同一地点",
+    "nearbyStations": [
+      "小桔充电汽车充电站(桐庐新合乡新四村充电站)"
+    ]
+  },
+  {
+    "id": "cc-hz-03",
+    "name": "星星充电(黄龙体育中心)",
+    "status": "NEARBY_ONLY",
+    "storedCoord": "119.758304, 29.750059",
+    "message": "文本搜索未找到精确匹配，附近有充电站但无法确认是否为同一地点",
+    "nearbyStations": [
+      "开迈斯汽车充电站(杭州市桐庐颐居养生小镇站)",
+      "驴充充汽车充电站(桐庐天井拾光民宿)",
+      "金牛村充电站"
+    ]
+  },
+  {
+    "id": "cc-hz-04",
+    "name": "中国石化超充(通晨充电站)",
+    "status": "NEARBY_ONLY",
+    "storedCoord": "119.911568, 29.595398",
+    "message": "文本搜索未找到精确匹配，附近有充电站但无法确认是否为同一地点",
+    "nearbyStations": [
+      "安培快充汽车充电站(浦江县诗人小镇充电站)",
+      "安培快充汽车充电站",
+      "安培快充汽车充电站(浦江县大畈综合供能站充电站)",
+      "中国石化汽车充电站(外罗家充电站)",
+      "中国石化汽车充电站(九母岛充电站)"
+    ]
+  },
+  {
+    "id": "cc-hz-05",
+    "name": "国家电网(湘湖路充电站)",
+    "status": "NOT_FOUND",
+    "storedCoord": "119.81984, 29.579467",
+    "message": "所有搜索策略均未找到匹配POI"
+  },
+  {
+    "id": "cc-hz-06",
+    "name": "国家电网(和平广场充电站)",
+    "status": "NEARBY_ONLY",
+    "storedCoord": "119.800758, 29.771251",
+    "message": "文本搜索未找到精确匹配，附近有充电站但无法确认是否为同一地点",
+    "nearbyStations": [
+      "充九九桐庐纳尼亚庄园汽车充电站"
+    ]
+  },
+  {
+    "id": "cc-hz-08",
+    "name": "云硕超充(庆隆新能源充电广场)",
+    "status": "NEARBY_ONLY",
+    "storedCoord": "119.744632, 29.776666",
+    "message": "文本搜索未找到精确匹配，附近有充电站但无法确认是否为同一地点",
+    "nearbyStations": [
+      "开迈斯汽车充电站(杭州市桐庐颐居养生小镇站)",
+      "驴充充汽车充电站(桐庐天井拾光民宿)",
+      "依威能源汽车充电站(金竹新城二期)",
+      "小桔充电汽车充电站(桐庐综合客运枢纽1号充电站)",
+      "依威能源汽车充电站(金竹新城)"
+    ]
+  },
+  {
+    "id": "cc-nb-04",
+    "name": "中国石化超充(双创大厦)",
+    "status": "NEARBY_ONLY",
+    "storedCoord": "119.767405, 29.835169",
+    "message": "文本搜索未找到精确匹配，附近有充电站但无法确认是否为同一地点",
+    "nearbyStations": [
+      "汽车充电站(桐庐县申通园区衡纳超充站)",
+      "小桔充电汽车充电站(大运物流园重卡充电站)",
+      "小桔充电汽车充电站(可充轻卡桐庐大运物流园充电站)",
+      "星星充电汽车充电站(桐庐宝之驿汽车销售服务有限公司-交流桩)",
+      "小桔充电汽车充电站(岚桐新能源重卡充电站)"
+    ]
+  },
+  {
+    "id": "cc-nb-06",
+    "name": "特来电(慈溪宗汉太阳超充)",
+    "status": "NOT_FOUND",
+    "storedCoord": "119.794403, 29.659734",
+    "message": "所有搜索策略均未找到匹配POI"
+  },
+  {
+    "id": "cc-nb-09",
+    "name": "中国石化(响岭岗充电站)",
+    "status": "ERROR",
+    "storedCoord": "119.970412, 29.159078",
+    "correctCoord": "119.891990, 29.154101",
+    "poiName": "中国石化溪边金加油站",
+    "poiAddress": "孝顺镇金义南线塘湖段",
+    "distance": 7635,
+    "needFix": true
+  }
+]
