@@ -167,8 +167,8 @@
                 <div id="route-details"></div>
             </div>
 
-            <!-- 云查车车辆追踪 -->
-            <div class="panel-section">
+            <!-- 云查车车辆追踪（后台自动运行，代理可用时才显示） -->
+            <div class="panel-section" id="vehicle-tracking-section" style="display:none;">
                 <h3><span class="icon">🚛</span> 车辆实时追踪
                     <button class="rt-refresh-btn" id="btn-refresh-vehicles" title="刷新车辆位置">🔄</button>
                 </h3>
@@ -176,7 +176,7 @@
                 <div class="vehicle-connect-section" id="vehicle-connect-section">
                     <div class="vehicle-status-row" id="vehicle-status-row">
                         <span class="vehicle-status-dot" id="vehicle-status-dot">⚪</span>
-                        <span class="vehicle-status-text" id="vehicle-status-text">正在连接云查车...</span>
+                        <span class="vehicle-status-text" id="vehicle-status-text">正在连接...</span>
                     </div>
                 </div>
                 <!-- 车辆列表 -->

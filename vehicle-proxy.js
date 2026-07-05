@@ -27,6 +27,24 @@
 const https = require('https');
 const http = require('http');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
+// ===== 自动加载 .env 文件（无需 dotenv 依赖） =====
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split('\n').forEach(line => {
+        line = line.trim();
+        if (!line || line.startsWith('#')) return;
+        const eqIdx = line.indexOf('=');
+        if (eqIdx < 0) return;
+        const key = line.substring(0, eqIdx).trim();
+        const val = line.substring(eqIdx + 1).trim();
+        if (key && !(key in process.env)) process.env[key] = val;
+    });
+    console.log('[配置] .env 已加载');
+}
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -300,6 +318,17 @@ const server = http.createServer((req, res) => {
         const vehicle = buildVehicleData().find(v => v.plate === plate);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(vehicle || { error: '未找到: ' + plate }));
+    } else if (path === '/api/prices') {
+        // 提供爬取的充电站实时电价数据（price-crawler.js 生成）
+        try {
+            const priceFile = path.join(__dirname, 'price-data.json');
+            const priceData = fs.readFileSync(priceFile, 'utf8');
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(priceData);
+        } catch(e) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'price-data.json not found', stations: [] }));
+        }
     } else if (path === '/api/refresh' && req.method === 'POST') {
         refreshData().then(() => {
             res.writeHead(200, { 'Content-Type': 'application/json' });

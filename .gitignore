@@ -19,8 +19,15 @@ __pycache__/
 # Node
 node_modules/
 
+# Environment secrets (real credentials, never commit)
+.env
+
+# Price crawler output (regenerated, contains no secrets)
+price-data.json
+
 # Dev/verification scripts (contain API keys, not for public repo)
 verify-*.js
 find-correct-coords.js
 coord-verification-*.json
 test_*.js
+test_crawler.js

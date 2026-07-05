@@ -32,6 +32,11 @@ const App = {
         this.bindEvents();
         this.initAmapKey();
         this.loadPriceConfig();  // 加载已保存的电价配置
+        // 异步加载爬取的实时电价（不阻塞初始化，加载完成后自动刷新显示）
+        RealTimeData.loadCrawledPrices().then(() => {
+            this.refreshRealTimeData();
+            this.updateElecWidget();
+        });
         this.updateStats();
         // 初始刷新实时数据
         this.refreshRealTimeData();
@@ -2345,29 +2350,59 @@ const App = {
         if (btn) btn.classList.add('active');
     },
 
-    // ========== 云查车车辆追踪 ==========
-    vehicleProxyUrl: (function() {
-        // 优先使用 localStorage 中配置的远程代理地址，默认尝试同源 /api/vehicles
-        return localStorage.getItem('vehicle_proxy_url') || '';
-    })(),
+    // ========== 云查车车辆追踪（后台自动运行，前端只读展示） ==========
+    vehicleProxyUrl: null,  // null=未探测, ''=同源, 'http://...'=远程
     vehicleMarkers: {},
     vehicleLayer: null,
     vehicleRefreshTimer: null,
     vehicleTargetPlates: ['浙A****D', '浙A****D'],
+    vehicleAutoDetected: false,
+
+    // 自动探测代理URL（按优先级尝试，用户无需手动配置）
+    async autoDetectProxyUrl() {
+        // 1. localStorage 中保存的地址（之前成功连接过的）
+        const saved = localStorage.getItem('vehicle_proxy_url');
+        if (saved) {
+            try {
+                const resp = await fetch(`${saved}/api/status`);
+                if (resp.ok) return saved;
+            } catch(e) {}
+        }
+        // 2. 同源 /api/status（云端部署，代理与前端同服务器）
+        try {
+            const resp = await fetch('/api/status');
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data && data.loggedIn !== undefined) return '';
+            }
+        } catch(e) {}
+        // 3. 基于当前页面host推断代理地址（手机局域网访问）
+        //    手机通过 http://电脑IP:8080 访问地图 → 代理在 http://电脑IP:3001
+        const host = location.hostname;
+        if (host && host !== 'localhost' && host !== '127.0.0.1') {
+            const proxyUrl = `http://${host}:3001`;
+            try {
+                const resp = await fetch(`${proxyUrl}/api/status`);
+                if (resp.ok) return proxyUrl;
+            } catch(e) {}
+        }
+        // 4. 本地 localhost:3001（开发环境，同机访问）
+        try {
+            const resp = await fetch('http://localhost:3001/api/status');
+            if (resp.ok) return 'http://localhost:3001';
+        } catch(e) {}
+        return null;
+    },
 
     // 获取当前代理URL
     getVehicleProxyUrl() {
-        return localStorage.getItem('vehicle_proxy_url') || this.vehicleProxyUrl || '';
+        return this.vehicleProxyUrl || '';
     },
 
-    // 设置代理URL
+    // 设置代理URL（仅后台自动调用，不在UI暴露）
     setVehicleProxyUrl(url) {
-        if (url) {
-            localStorage.setItem('vehicle_proxy_url', url);
-        } else {
-            localStorage.removeItem('vehicle_proxy_url');
-        }
-        this.vehicleProxyUrl = url || '';
+        this.vehicleProxyUrl = url;
+        if (url) localStorage.setItem('vehicle_proxy_url', url);
     },
 
     initVehicleTracking() {
@@ -2408,16 +2443,28 @@ const App = {
         const dot = document.getElementById('vehicle-status-dot');
         const text = document.getElementById('vehicle-status-text');
         const vehicleList = document.getElementById('vehicle-list');
+        const section = document.getElementById('vehicle-tracking-section');
         if (!dot || !text) return;
 
-        const proxyUrl = this.getVehicleProxyUrl();
-        if (!proxyUrl) {
-            dot.textContent = '🔴';
-            text.innerHTML = '车辆追踪未配置 — <a href="#" onclick="App.showVehicleConfig();return false;" style="color:var(--primary);">点击配置</a>';
-            if (vehicleList) vehicleList.style.display = 'none';
+        // 首次运行：自动探测代理URL（用户无需手动配置）
+        if (!this.vehicleAutoDetected) {
+            this.vehicleAutoDetected = true;
+            const detected = await this.autoDetectProxyUrl();
+            if (detected !== null) {
+                this.vehicleProxyUrl = detected;
+                if (detected) localStorage.setItem('vehicle_proxy_url', detected);
+            } else {
+                this.vehicleProxyUrl = null;
+            }
+        }
+
+        // 代理不可用 → 隐藏整个面板，前台无感知
+        if (this.vehicleProxyUrl === null) {
+            if (section) section.style.display = 'none';
             return;
         }
 
+        const proxyUrl = this.vehicleProxyUrl;
         try {
             const resp = await fetch(`${proxyUrl}/api/status`);
             if (!resp.ok) throw new Error('代理服务器未运行');
@@ -2426,10 +2473,9 @@ const App = {
             if (data.loggedIn && data.hasAuth) {
                 dot.textContent = '🟢';
                 text.textContent = `已连接 · ${data.carCount}辆车 · ${data.positionCount}个位置`;
+                if (section) section.style.display = '';
                 if (vehicleList) vehicleList.style.display = 'block';
-                // 自动获取车辆位置
                 this.fetchVehicles();
-                // 启动定时刷新
                 if (!this.vehicleRefreshTimer) {
                     this.vehicleRefreshTimer = setInterval(() => this.fetchVehicles(), 30000);
                 }
@@ -2440,51 +2486,16 @@ const App = {
             }
         } catch(e) {
             dot.textContent = '🔴';
-            text.innerHTML = `代理服务器连接失败 — <a href="#" onclick="App.showVehicleConfig();return false;" style="color:var(--primary);">重新配置</a>`;
+            text.textContent = '车辆追踪服务离线';
             if (vehicleList) vehicleList.style.display = 'none';
         }
     },
 
-    // 显示车辆追踪配置弹窗
-    showVehicleConfig() {
-        const current = this.getVehicleProxyUrl();
-        const modal = document.createElement('div');
-        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
-        modal.innerHTML = `
-            <div style="background:#fff;border-radius:12px;padding:24px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-                <h3 style="margin:0 0 16px;font-size:16px;color:var(--primary);">🚛 车辆追踪服务配置</h3>
-                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;line-height:1.6;">
-                    输入车辆追踪代理服务器的地址。部署在云服务器后，所有用户均可实时查看车辆位置，无需本地运行。
-                </p>
-                <input type="text" id="vehicle-proxy-input" value="${current}" placeholder="https://your-server.com:3001"
-                    style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:12px;">
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5;">
-                    💡 部署方式：<br>
-                    1. 将 vehicle-proxy.js 部署到云服务器<br>
-                    2. 用 PM2 守护进程：pm2 start vehicle-proxy.js<br>
-                    3. 将服务器地址填入上方输入框
-                </div>
-                <div style="display:flex;gap:8px;justify-content:flex-end;">
-                    <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:14px;">取消</button>
-                    <button id="vehicle-proxy-save" style="padding:8px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;cursor:pointer;font-size:14px;">保存</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.querySelector('#vehicle-proxy-save').addEventListener('click', () => {
-            const url = document.getElementById('vehicle-proxy-input').value.trim();
-            this.setVehicleProxyUrl(url);
-            modal.remove();
-            this.checkVehicleProxyStatus();
-        });
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.remove();
-        });
-    },
+    // 车辆追踪已全自动化：代理服务通过环境变量配置，前端自动探测，无需手动配置入口
 
     async fetchVehicles() {
-        const proxyUrl = this.getVehicleProxyUrl();
-        if (!proxyUrl) return;
+        if (this.vehicleProxyUrl === null) return;
+        const proxyUrl = this.vehicleProxyUrl || '';
         try {
             const resp = await fetch(`${proxyUrl}/api/vehicles`);
             if (!resp.ok) return;

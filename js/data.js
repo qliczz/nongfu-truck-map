@@ -620,9 +620,53 @@ const MAP_DATA = {
  */
 const RealTimeData = {
 
+    // 爬取的实时电价缓存（从 price-data.json 加载）
+    crawledPrices: null,
+    crawledAt: null,
+
+    /**
+     * 异步加载爬取的实时电价
+     * 数据来源: price-crawler.js 爬取高德地图 → price-data.json
+     * 优先尝试 /api/prices (后端实时) → price-data.json (静态文件)
+     */
+    async loadCrawledPrices() {
+        if (this.crawledPrices !== null) return this.crawledPrices;
+        this.crawledPrices = {};
+        try {
+            let resp;
+            // 尝试1: 后端API（vehicle-proxy 提供 /api/prices）
+            try { resp = await fetch('/api/prices'); } catch(e) {}
+            // 尝试2: 静态文件
+            if (!resp || !resp.ok) {
+                try { resp = await fetch('price-data.json'); } catch(e) {}
+            }
+            if (!resp || !resp.ok) return null;
+            const data = await resp.json();
+            if (data && data.stations) {
+                data.stations.forEach(s => {
+                    if (s.pricePerKwh && !s.error) {
+                        this.crawledPrices[s.stationId] = {
+                            pricePerKwh: s.pricePerKwh,
+                            chargePrice: s.chargePrice,
+                            brand: s.brand,
+                            source: '高德地图实时',
+                            updated: s.crawledAt
+                        };
+                    }
+                });
+                this.crawledAt = data.crawlTime;
+                const count = Object.keys(this.crawledPrices).length;
+                if (count > 0) console.log('[电价] 已加载 ' + count + ' 个站点实时电价 (' + (data.crawlTime || '') + ')');
+            }
+            return this.crawledPrices;
+        } catch(e) {
+            return null;
+        }
+    },
+
     /**
      * 获取充电站的实际综合电价信息
-     * 优先级：站点pricePerKwh > 运营商默认价 > 全局默认价
+     * 优先级：爬取实时电价 > 站点pricePerKwh > 运营商默认价 > 全局默认价
      * 返回：{ pricePerKwh, serviceFee, touEnabled, electricityBase, source, updated }
      *   pricePerKwh: 平段综合电价(元/度，含电费+服务费)
      *   serviceFee: 服务费(元/度，固定)
@@ -632,8 +676,17 @@ const RealTimeData = {
     getStationPrice(station) {
         let pricePerKwh, serviceFee, touEnabled, source, updated;
 
-        // 1. 站点级实际电价（最高优先级）
-        if (station.pricePerKwh) {
+        // 0. 爬取的实时电价（最高优先级，来自高德地图）
+        if (this.crawledPrices && this.crawledPrices[station.id]) {
+            const crawled = this.crawledPrices[station.id];
+            pricePerKwh = crawled.pricePerKwh;
+            serviceFee = station.serviceFee !== undefined ? station.serviceFee : 0.40;
+            touEnabled = station.touEnabled !== undefined ? station.touEnabled : true;
+            source = crawled.source;
+            updated = crawled.updated ? crawled.updated.substring(0, 10) : '';
+        }
+        // 1. 站点级实际电价
+        else if (station.pricePerKwh) {
             pricePerKwh = station.pricePerKwh;
             serviceFee = station.serviceFee !== undefined ? station.serviceFee : 0.40;
             touEnabled = station.touEnabled !== undefined ? station.touEnabled : true;
